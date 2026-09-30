@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automatización colectivas</title>
+<style>
+  :root {
+    --azul: #0B5CAD; --azul-oscuro: #084785; --azul-claro: #E8F1FB; --azul-suave: #F5F9FE;
+    --blanco: #FFFFFF; --fondo: #EEF3F9; --borde: #C9D8EA; --texto: #1F2D3D; --texto-suave: #5B6B7F;
+    --amarillo: #FFF1C2; --amarillo-txt: #8A6100; --rojo: #FFD9D9; --rojo-txt: #A12626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--fondo); color: var(--texto); font: 14px "Segoe UI", system-ui, sans-serif;
+         display: flex; flex-direction: column; }
+  header { background: var(--azul); color: var(--blanco); display: flex; align-items: center;
+           gap: 18px; padding: 16px 24px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; }
+  header .sub { color: #CFE0F5; font-size: 14px; }
+  header .firma { margin-left: auto; color: #CFE0F5; font-size: 12px; font-style: italic; }
+  main { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .tarjeta { background: var(--blanco); border: 1px solid var(--borde); border-radius: 6px; padding: 14px 18px; }
+  .tarjeta h2 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tarjeta h2::before { content: ""; width: 4px; height: 20px; background: var(--azul); border-radius: 2px; }
+  .tarjeta h2 small { font-weight: 400; color: var(--texto-suave); font-size: 12.5px; }
+  label.campo { display: block; color: var(--texto-suave); font-size: 12.5px; margin-bottom: 4px; }
+  input[type=text] { font: 15px "Segoe UI", system-ui, sans-serif; padding: 8px 10px; width: 360px; max-width: 100%;
+         border: 1px solid var(--borde); border-radius: 4px; color: var(--texto); }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px var(--azul-claro); }
+  textarea { width: 100%; height: 130px; resize: vertical; font: 13px Consolas, monospace; padding: 10px;
+         background: var(--azul-suave); border: 1px solid var(--borde); border-radius: 4px; color: var(--texto); }
+  textarea::placeholder { color: #9AA8B8; }
+  .segmento { display: inline-flex; border: 1px solid var(--azul); border-radius: 4px; overflow: hidden; }
+  .segmento button { border: none; border-radius: 0; padding: 6px 20px; background: var(--blanco); color: var(--azul); font-weight: 600; }
+  .segmento button + button { border-left: 1px solid var(--azul); }
+  .segmento button[aria-checked=true] { background: var(--azul); color: var(--blanco); }
+  .segmento button:hover:not([aria-checked=true]) { background: var(--azul-claro); }
+  .fila { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .fila .derecha { margin-left: auto; }
+  .ayuda { color: var(--texto-suave); font-size: 12.5px; }
+  button { font: 600 14px "Segoe UI", system-ui, sans-serif; padding: 8px 18px; border-radius: 4px; cursor: pointer;
+           border: 1px solid var(--azul); transition: background .15s; }
+  .primario { background: var(--azul); color: var(--blanco); }
+  .primario:hover { background: var(--azul-oscuro); }
+  .secundario { background: var(--blanco); color: var(--azul); font-weight: 400; }
+  .secundario:hover { background: var(--azul-claro); }
+  .resultado { flex: 1; display: flex; flex-direction: column; min-height: 300px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .chip { font-weight: 600; font-size: 12.5px; padding: 4px 10px; border-radius: 3px; }
+  .chip.total { background: var(--azul-claro); color: var(--azul); }
+  .chip.revisar { background: var(--amarillo); color: var(--amarillo-txt); }
+  .chip.sincod { background: var(--rojo); color: var(--rojo-txt); }
+  .tabla-wrap { flex: 1; overflow: auto; border: 1px solid var(--borde); border-radius: 4px; min-height: 200px; }
+  table { border-collapse: collapse; width: 100%; }
+  th { position: sticky; top: 0; background: var(--azul); color: var(--blanco); text-align: left;
+       padding: 8px 10px; font-weight: 600; white-space: nowrap; }
+  td { padding: 5px 10px; border-bottom: 1px solid #EDF2F8; white-space: nowrap; }
+  tbody tr:nth-child(even) td { background: var(--azul-suave); }
+  tbody tr.revisar td { background: var(--amarillo); }
+  tbody tr.sincodigo td { background: var(--rojo); }
+  td[contenteditable] { cursor: text; }
+  td[contenteditable]:focus { outline: 2px solid var(--azul); outline-offset: -2px; background: var(--blanco) !important; }
+  td.origen { color: var(--texto-suave); font-size: 12.5px; }
+  td.quitar { width: 36px; text-align: center; }
+  td.quitar button { padding: 0 8px; border: none; background: none; color: var(--texto-suave); font-size: 16px; }
+  td.quitar button:hover { color: var(--rojo-txt); }
+  .vacio { padding: 30px; text-align: center; color: var(--texto-suave); }
+  footer { background: var(--azul-oscuro); color: var(--blanco); font-size: 12.5px; padding: 6px 16px;
+           display: flex; gap: 12px; }
+  footer .copy { margin-left: auto; color: #CFE0F5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 Automatización colectivas</h1>
+  <span class="sub">Pega los usuarios, revisa y exporta a Excel</span>
+  <span class="firma">Hecho por Celia López de María · 2026</span>
+</header>
+
+<main>
+  <section class="tarjeta">
+    <h2>1. Datos generales</h2>
+    <div class="fila" style="margin-top:0">
+      <span class="campo" style="margin:0">¿Rellenar organización?</span>
+      <div class="segmento" role="radiogroup" aria-label="Rellenar organización">
+        <button type="button" id="orgSi" role="radio">Sí</button>
+        <button type="button" id="orgNo" role="radio">No</button>
+      </div>
+    </div>
+    <div id="bloqueOrg" style="margin-top:10px">
+      <label class="campo" for="org">Organización</label>
+      <input type="text" id="org" autocomplete="off" placeholder="Nombre de la organización">
+    </div>
+    <div id="avisoSinOrg" class="ayuda" style="margin-top:10px">La columna <b>organizacion</b> quedará vacía en el Excel.</div>
+  </section>
+
+  <section class="tarjeta">
+    <h2>2. Usuarios <small>Una línea por usuario: email | código | …  (el nombre es opcional)</small></h2>
+    <textarea id="entrada" spellcheck="false" placeholder="Ejemplo:
+nombre.apellido@empresa.es | C09-00000 | EMPRESA EJEMPLO SL
+María José Pérez Gómez | mariajose.perezg@empresa.es | C09-00000"></textarea>
+    <div class="fila">
+      <button class="primario" id="btnProcesar">▶ Procesar</button>
+      <span class="ayuda">Ctrl + Enter</span>
+      <button class="secundario derecha" id="btnLimpiar">🗑 Limpiar todo</button>
+    </div>
+  </section>
+
+  <section class="tarjeta resultado">
+    <h2>3. Resultado <small>Haz clic en una celda para corregirla · ✕ para quitar una fila</small></h2>
+    <div class="chips">
+      <span class="chip total" id="chipTotal"></span>
+      <span class="chip revisar" id="chipRevisar"></span>
+      <span class="chip sincod" id="chipSincod"></span>
+    </div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Email</th><th>Nombre</th><th>Apellidos</th><th>Código</th><th>Origen</th><th></th></tr></thead>
+        <tbody id="cuerpo"></tbody>
+      </table>
+      <div class="vacio" id="vacio">Todavía no hay usuarios. Pega las líneas arriba y pulsa <b>Procesar</b>.</div>
+    </div>
+    <div class="fila">
+      <button class="primario derecha" id="btnGuardar">💾 Descargar Excel</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span id="estado">Listo.</span>
+  <span class="copy">© 2026 Celia López de María</span>
+</footer>
+
+<script>
+"use strict";
+// Plantilla base (.xlsx) incrustada en base64
+const PLANTILLA_B64 = "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";
+
+/* ======================= Lógica de nombres (igual que rellenar_colectivas.py) ======================= */
+const NOMBRES = new Set(`
+aaron abel abraham adela adolfo adrian agustin aitana aitor alba albert alberto alejandra alejandro
+alex alexandra alexis alfonso alfredo alicia alma allison alvaro amaia amparo ana andrea andres angel
+angela angeles anna antonia antonio ariadna arnau arturo asier asuncion aurora beatriz belen benjamin
+bernardo blanca borja bruno camila candela carla carles carlos carmen carolina catalina cecilia celia
+cesar charo clara claudia concepcion consuelo cristian cristina daniel daniela dario david diana diego
+dolores domingo eduardo elena elisa eloy elvira emilio emma enrique eric ernesto esperanza esteban
+estefania ester esther eugenia eva fabian federico felipe felix fernanda fernando francisca francisco
+gabriel gabriela gema gemma gerard german gloria gonzalo gregorio guillermo gustavo hector helena
+hugo ignacio ines inmaculada irene isaac isabel ismael ivan jaime jaume javier jesus joan joaquin
+joel jordi jorge jose josefa josep juan juana julia julian julio laia lara laura leire leonardo
+lidia lorena lorenzo lourdes lucas lucia luis luisa lydia magdalena manoli manuel manuela marc marco
+marcos margarita maria mariano marina mario marta martin martina mateo matias mercedes miguel mireia
+miriam mohamed monica montserrat natalia nerea nicolas noelia nuria olga oliver oriol oscar pablo
+paloma paola pascual patricia paula pedro pilar pol rafael ramon raquel raul rebeca ricardo roberto
+rocio rodrigo rosa rosario ruben salvador samuel sandra santiago sara sebastian sergi sergio silvia
+sofia sonia susana teresa tomas valentina valeria vanesa veronica vicente victor victoria virginia
+xavier yolanda`.split(/\s+/).filter(Boolean));
+
+const APELLIDOS = new Set(`
+aguilar alonso alvarez arias blanco bravo caballero cabrera calvo campos cano carmona carrasco castillo
+castro cortes crespo cruz delgado diaz diez dominguez duran esteban fernandez ferrer flores fuentes
+gallego garcia garrido gil gimenez gomez gonzalez guerrero gutierrez hernandez herrera herrero hidalgo
+iglesias jimenez leon lopez lorenzo lozano marin marquez martin martinez medina mendez molina montero
+mora morales moreno munoz navarro nieto ortega ortiz pascual pastor pena perez prieto ramirez ramos
+reyes rodriguez romero rubio ruiz saez sanchez santana santiago santos sanz serrano soler soto suarez
+torres vargas vazquez vega velasco vicente`.split(/\s+/).filter(Boolean));
+
+const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "i", "da", "van", "von"]);
+const EMAIL_RE = /[\w.+'-]+@[\w-]+(?:\.[\w-]+)+/;
+const CODIGO_RE = /\b[A-Z]\d{2}-\d{5}\b/gi;
+const SEPARADORES_RE = /\s*[|;\t]\s*/;
+const EMPRESA_RE = /\b(S\.?\s?L\.?\s?U?\.?|S\.?\s?A\.?\s?U?\.?|S\.?\s?COOP|C\.?\s?B\.?|TELECOM\w*|NETWORKS?|ENERGIA|SOLUCIONES|SERVICIOS|GRUPO|COMUNICACIONES|SISTEMAS|IMPULSA)\b/i;
+
+const normalizar = t => t.normalize("NFKD").replace(/[^\x00-\x7F]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+
+function capitalizar(texto) {
+  return texto.split(/\s+/).filter(Boolean).map((p, i) =>
+    i > 0 && PARTICULAS.has(p.toLowerCase()) ? p.toLowerCase()
+      : p.split("-").map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase()).join("-")
+  ).join(" ");
+}
+
+function partirNombreCompuesto(tok) {
+  if (NOMBRES.has(tok) || tok.length < 6) return [tok];
+  for (let i = 3; i < tok.length - 2; i++) {
+    if (NOMBRES.has(tok.slice(0, i)) && NOMBRES.has(tok.slice(i))) return [tok.slice(0, i), tok.slice(i)];
+  }
+  return [tok];
+}
+
+function limpiarApellido(tok) {
+  if (APELLIDOS.has(tok)) return tok;
+  let mejor = null;
+  for (const a of APELLIDOS) {
+    if (a.length >= 5 && tok.startsWith(a) && tok.length - a.length <= 3 && (!mejor || a.length > mejor.length)) mejor = a;
+  }
+  return mejor || tok;
+}
+
+function nombreDesdeEmail(email) {
+  const local = email.split("@")[0].toLowerCase();
+  const partes = local.split(/[._-]+/).map(p => p.replace(/[^a-z]/g, "")).filter(Boolean);
+  if (!partes.length) return ["", "", false];
+  if (partes.length === 1) {
+    const tok = partes[0];
+    for (let i = tok.length - 3; i > 2; i--) {
+      if (NOMBRES.has(tok.slice(0, i))) return [capitalizar(tok.slice(0, i)), capitalizar(limpiarApellido(tok.slice(i))), false];
+    }
+    return [capitalizar(tok), "", false];
+  }
+  const nombre = partirNombreCompuesto(partes[0]);
+  const apellidos = [];
+  for (const p of partes.slice(1, -1)) (NOMBRES.has(p) && !apellidos.length ? nombre : apellidos).push(p);
+  apellidos.push(limpiarApellido(partes[partes.length - 1]));
+  const seguro = NOMBRES.has(partes[0]) || nombre.length > 1;
+  return [capitalizar(nombre.join(" ")), capitalizar(apellidos.join(" ")), seguro];
+}
+
+function esNombreDePersona(segmento, email) {
+  if (EMPRESA_RE.test(segmento)) return false;
+  const local = normalizar(email.split("@")[0]);
+  return segmento.split(/\s+/).map(normalizar).some(w => w.length >= 3 && local.includes(w));
+}
+
+function separarNombreCompleto(texto, email) {
+  const palabras = texto.split(/\s+/).filter(Boolean);
+  if (palabras.length === 1) return [capitalizar(texto), ""];
+  const primera = normalizar(email.split("@")[0].split(/[._-]/)[0]);
+  let acumulado = "", n = 0;
+  for (let i = 0; i < palabras.length - 1; i++) {
+    acumulado += normalizar(palabras[i]);
+    if (acumulado && primera.startsWith(acumulado)) n = i + 1; else break;
+  }
+  if (n === 0) n = palabras.length >= 4 ? 2 : 1;
+  return [capitalizar(palabras.slice(0, n).join(" ")), capitalizar(palabras.slice(n).join(" "))];
+}
+
+function parsearLinea(linea) {
+  linea = linea.trim();
+  if (!linea || /^[-=_ ]+$/.test(linea)) return null;
+  const m = linea.match(EMAIL_RE);
+  if (!m) return null;
+  const email = m[0].trim().toLowerCase();
+  const codigos = [...new Set((linea.match(CODIGO_RE) || []).map(c => c.toUpperCase()))];
+  const resto = linea.replace(m[0], " ").replace(CODIGO_RE, " ");
+  const segmentos = resto.split(SEPARADORES_RE).map(s => s.replace(/^[ ,]+|[ ,]+$/g, ""))
+    .filter(s => s && esNombreDePersona(s, email));
+  let nombre, apellidos, origen;
+  if (segmentos.length >= 2) {
+    [nombre, apellidos, origen] = [capitalizar(segmentos[0]), capitalizar(segmentos[1]), "mensaje"];
+  } else if (segmentos.length === 1) {
+    [nombre, apellidos] = separarNombreCompleto(segmentos[0], email);
+    origen = "mensaje";
+  } else {
+    let seguro;
+    [nombre, apellidos, seguro] = nombreDesdeEmail(email);
+    origen = seguro ? "correo" : "correo (REVISAR)";
+  }
+  return { email, nombre, apellidos, codigo: codigos.join(", "), origen };
+}
+
+/* ======================= Excel (.xlsx) sin librerías ======================= */
+const b64ABytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+async function leerZip(bytes) {
+  const dv = new DataView(bytes.buffer);
+  let eocd = bytes.length - 22;
+  while (eocd >= 0 && dv.getUint32(eocd, true) !== 0x06054b50) eocd--;
+  const total = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const ficheros = new Map();
+  for (let i = 0; i < total; i++) {
+    const metodo = dv.getUint16(p + 10, true), tam = dv.getUint32(p + 20, true);
+    const ln = dv.getUint16(p + 28, true), le = dv.getUint16(p + 30, true), lc = dv.getUint16(p + 32, true);
+    const off = dv.getUint32(p + 42, true);
+    const nombre = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + ln));
+    const ini = off + 30 + dv.getUint16(off + 26, true) + dv.getUint16(off + 28, true);
+    let datos = bytes.slice(ini, ini + tam);
+    if (metodo === 8) {
+      const ds = new Blob([datos]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      datos = new Uint8Array(await new Response(ds).arrayBuffer());
+    }
+    ficheros.set(nombre, datos);
+    p += 46 + ln + le + lc;
+  }
+  return ficheros;
+}
+
+const TABLA_CRC = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(b) { let c = 0xFFFFFFFF; for (const x of b) c = TABLA_CRC[(c ^ x) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+
+function escribirZip(ficheros) {
+  const enc = new TextEncoder(), partes = [], central = [];
+  let offset = 0;
+  const ahora = new Date();
+  const hora = (ahora.getHours() << 11) | (ahora.getMinutes() << 5) | (ahora.getSeconds() >> 1);
+  const fecha = ((ahora.getFullYear() - 1980) << 9) | ((ahora.getMonth() + 1) << 5) | ahora.getDate();
+  for (const [nombre, datos] of ficheros) {
+    const n = enc.encode(nombre), crc = crc32(datos);
+    const lh = new DataView(new ArrayBuffer(30));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, hora, 2], [12, fecha, 2], [14, crc, 4],
+     [18, datos.length, 4], [22, datos.length, 4], [26, n.length, 2], [28, 0, 2]]
+      .forEach(([o, v, s]) => s === 4 ? lh.setUint32(o, v, true) : lh.setUint16(o, v, true));
+    const ch = new DataView(new ArrayBuffer(46));
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, hora, 2], [14, fecha, 2], [16, crc, 4],
+     [20, datos.length, 4], [24, datos.length, 4], [28, n.length, 2], [30, 0, 2], [32, 0, 2], [34, 0, 2], [36, 0, 2],
+     [38, 0, 4], [42, offset, 4]]
+      .forEach(([o, v, s]) => s === 4 ? ch.setUint32(o, v, true) : ch.setUint16(o, v, true));
+    partes.push(new Uint8Array(lh.buffer), n, datos);
+    central.push(new Uint8Array(ch.buffer), n);
+    offset += 30 + n.length + datos.length;
+  }
+  const tamCentral = central.reduce((s, b) => s + b.length, 0);
+  const fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true);
+  fin.setUint16(8, ficheros.size, true); fin.setUint16(10, ficheros.size, true);
+  fin.setUint32(12, tamCentral, true); fin.setUint32(16, offset, true);
+  return new Blob([...partes, ...central, new Uint8Array(fin.buffer)],
+                  { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+const xmlEsc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+async function generarExcel(filas, organizacion) {
+  const ficheros = await leerZip(b64ABytes(PLANTILLA_B64));
+  const ruta = "xl/worksheets/sheet1.xml";
+  let hoja = new TextDecoder().decode(ficheros.get(ruta));
+  const celda = (ref, valor, estilo) => valor
+    ? `<c r="${ref}" s="${estilo}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(valor)}</t></is></c>`
+    : `<c r="${ref}" s="${estilo}"/>`;
+  const cols = ["A", "B", "C", "D", "E"];
+  const cabecera = ["email", "nombre", "apellidos", "organizacion", "codigo"];
+  let datos = `<row r="1">${cabecera.map((v, i) => celda(cols[i] + 1, v, 1)).join("")}</row>`;
+  filas.forEach((f, i) => {
+    const r = i + 2, vals = [f.email, f.nombre, f.apellidos, organizacion, f.codigo];
+    datos += `<row r="${r}">${vals.map((v, j) => celda(cols[j] + r, v, 2)).join("")}</row>`;
+  });
+  hoja = hoja.replace(/<sheetData\s*\/>|<sheetData>[\s\S]*<\/sheetData>/, `<sheetData>${datos}</sheetData>`)
+             .replace(/<dimension ref="[^"]*"\s*\/>/, `<dimension ref="A1:E${filas.length + 1}"/>`);
+  ficheros.set(ruta, new TextEncoder().encode(hoja));
+  return escribirZip(ficheros);
+}
+
+/* ======================= Interfaz ======================= */
+const $ = id => document.getElementById(id);
+let filas = [];
+
+const almacen = {
+  leer(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+  guardar(k, v) { try { localStorage.setItem(k, v); } catch {} }
+};
+
+const estadoFila = f => !f.codigo ? "sincodigo" : f.origen.includes("REVISAR") ? "revisar" : "";
+const estado = t => { $("estado").textContent = t; };
+
+function pintar() {
+  const cuerpo = $("cuerpo");
+  cuerpo.innerHTML = "";
+  filas.forEach((f, i) => {
+    const tr = document.createElement("tr");
+    tr.className = estadoFila(f);
+    for (const campo of ["email", "nombre", "apellidos", "codigo"]) {
+      const td = document.createElement("td");
+      td.contentEditable = "plaintext-only";
+      td.textContent = f[campo];
+      td.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); td.blur(); } });
+      td.addEventListener("blur", () => {
+        const v = td.textContent.trim();
+        if (v === f[campo]) return;
+        f[campo] = v;
+        if (campo === "nombre" || campo === "apellidos") f.origen = "editado";
+        pintar();
+      });
+      tr.appendChild(td);
+    }
+    const tdo = document.createElement("td");
+    tdo.className = "origen";
+    tdo.textContent = f.origen;
+    tr.appendChild(tdo);
+    const tdq = document.createElement("td");
+    tdq.className = "quitar";
+    const b = document.createElement("button");
+    b.textContent = "✕"; b.title = "Quitar fila";
+    b.onclick = () => { filas.splice(i, 1); pintar(); estado("Fila quitada."); };
+    tdq.appendChild(b);
+    tr.appendChild(tdq);
+    cuerpo.appendChild(tr);
+  });
+  $("vacio").style.display = filas.length ? "none" : "block";
+  $("chipTotal").textContent = `👥 ${filas.length} usuarios`;
+  $("chipRevisar").textContent = `⚠ ${filas.filter(f => estadoFila(f) === "revisar").length} por revisar`;
+  $("chipSincod").textContent = `✖ ${filas.filter(f => estadoFila(f) === "sincodigo").length} sin código`;
+}
+
+function procesar() {
+  const lineas = $("entrada").value.split(/\r?\n/);
+  if (!lineas.some(l => l.trim())) { estado("Pega primero las líneas de usuarios."); return; }
+  const existentes = new Set(filas.map(f => f.email));
+  let nuevas = 0, repetidas = 0;
+  const ignoradas = [];
+  for (const linea of lineas) {
+    const f = parsearLinea(linea);
+    if (!f) { if (linea.trim() && !/^[-=_ ]+$/.test(linea.trim())) ignoradas.push(linea.trim()); continue; }
+    if (existentes.has(f.email)) { repetidas++; continue; }
+    existentes.add(f.email); filas.push(f); nuevas++;
+  }
+  $("entrada").value = "";
+  pintar();
+  let msg = `✔ ${nuevas} usuario(s) añadidos.`;
+  if (repetidas) msg += `  ${repetidas} repetido(s) omitidos.`;
+  if (ignoradas.length) msg += `  ${ignoradas.length} línea(s) sin email ignoradas.`;
+  estado(msg);
+  if (ignoradas.length) alert("Estas líneas no tienen email y se han ignorado:\n\n" + ignoradas.slice(0, 15).join("\n"));
+}
+
+let usarOrg = true;
+function setUsarOrg(valor) {
+  usarOrg = valor;
+  $("orgSi").setAttribute("aria-checked", String(valor));
+  $("orgNo").setAttribute("aria-checked", String(!valor));
+  $("bloqueOrg").style.display = valor ? "block" : "none";
+  $("avisoSinOrg").style.display = valor ? "none" : "block";
+  almacen.guardar("colectivas_usar_org", valor ? "si" : "no");
+}
+
+async function guardar() {
+  const org = usarOrg ? $("org").value.trim() : "";
+  if (usarOrg && !org) { alert("Escribe la organización o marca «No» si no hace falta."); $("org").focus(); return; }
+  if (!filas.length) { alert("No hay usuarios. Pega las líneas y pulsa Procesar."); return; }
+  const pendientes = filas.filter(f => estadoFila(f)).length;
+  if (pendientes && !confirm(`Hay ${pendientes} fila(s) marcadas para revisar o sin código.\n\n¿Descargar igualmente?`)) return;
+  try {
+    const blob = await generarExcel(filas, org);
+    const d = new Date(), z = n => String(n).padStart(2, "0");
+    const sufijoOrg = org ? org.replace(/[^\w-]+/g, "_").replace(/^_+|_+$/g, "") + "_" : "";
+    const nombre = `Colectivas_${sufijoOrg}${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}.xlsx`;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    if (org) almacen.guardar("colectivas_org", org);
+    estado(`💾 Descargado: ${nombre} (${filas.length} usuarios)`);
+  } catch (e) {
+    alert("Error al generar el Excel:\n" + e.message + "\n\nUsa Microsoft Edge o Google Chrome actualizados.");
+  }
+}
+
+function limpiar() {
+  if (filas.length && !confirm("¿Borrar todos los usuarios de la tabla?")) return;
+  filas = []; $("entrada").value = ""; pintar(); estado("Tabla vacía.");
+}
+
+$("org").value = almacen.leer("colectivas_org");
+$("orgSi").onclick = () => { setUsarOrg(true); $("org").focus(); };
+$("orgNo").onclick = () => setUsarOrg(false);
+setUsarOrg(almacen.leer("colectivas_usar_org") !== "no");
+$("btnProcesar").onclick = procesar;
+$("btnGuardar").onclick = guardar;
+$("btnLimpiar").onclick = limpiar;
+$("entrada").addEventListener("keydown", e => { if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); procesar(); } });
+pintar();
+($("org").value ? $("entrada") : $("org")).focus();
+</script>
+</body>
+</html>
